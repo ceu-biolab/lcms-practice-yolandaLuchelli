@@ -12,9 +12,8 @@ unit LipidScoreUnit;
 // !! TODO
 rule "Score 1 for lipid pair with increasing RT and carbon count"
 when
-    $a1 : /annotations [$rt1 : rtMin, $carbonCount1 : lipid.getCarbonCount(), $doubleBondCount : lipid.getDoubleBondsCount()]
-    $a2 : /annotations [this!= $a1, lipid.getDoubleBondsCount() == $doubleBondCount,
-    rtMin > $rt1, lipid.getCarbonCount() > $carbonCount1]
+    $a1 : /annotations [$rt1 : rtMin, $type : lipid.getLipidType(), $carbonCount : lipid.getCarbonCount(), $doubleBondCount : lipid.getDoubleBondsCount()]
+    $a2 : /annotations [this!= $a1, lipid.getLipidType() == $type, lipid.getDoubleBondsCount() == $doubleBondCount, lipid.getCarbonCount() > $carbonCount, rtMin > $rt1]
 then
     // in this case, the only change is the addition of the score, but the fact does not change so we do not break the principle of refractoriness
     $a1.addScore(1);
@@ -23,5 +22,133 @@ then
     System.out.println("Scored 1 for annotations: " + $a1 + " and " + $a2);
 end
 
+rule "Score 1 for lipid pair with increasing RT and decreasing double bond count"
+when
+    $a1 : /annotations [
+        $rt1 : rtMin,
+        $type : lipid.getLipidType(),
+        $carbonCount : lipid.getCarbonCount(),
+        $doubleBondCount : lipid.getDoubleBondsCount()
+    ]
+    $a2 : /annotations [
+        this != $a1,
+        lipid.getLipidType() == $type,
+        lipid.getCarbonCount() == $carbonCount,
+        lipid.getDoubleBondsCount() < $doubleBondCount,
+        rtMin > $rt1
+    ]
+then
+    $a1.addScore(1);
+    $a2.addScore(1);
+    System.out.println("Scored 1 for annotations: " + $a1 + " and " + $a2);
+end
+
+/*rule "Score 1 for lipid pair with increasing RT, different lipid type,  and increasing double bond count"
+when
+    $a1 : /annotations [
+        $rt1 : rtMin,
+        $rank1 : lipid.getLipidTypeRank(),
+        $carbonCount : lipid.getCarbonCount(),
+        $doubleBondCount : lipid.getDoubleBondsCount()
+    ]
+    $a2 : /annotations [
+        this != $a1,
+        $rank2 : lipid.getLipidTypeRank(),
+        lipid.getCarbonCount() == $carbonCount,
+        lipid.getDoubleBondsCount() > $doubleBondCount,
+        rtMin > $rt1,
+        eval($rank2 > $rank1)
+    ]
+then
+    $a1.addScore(1);
+    $a2.addScore(1);
+    System.out.println("Scored 1 for annotations: " + $a1 + " and " + $a2);
+end*/
+
+rule "Score 1 for lipid pair with increasing RT and different lipid type"
+when
+    $a1 : /annotations [
+        $rt1 : rtMin,
+        $lipid1 : lipid,
+        $carbonCount : lipid.getCarbonCount(),
+        $doubleBondCount : lipid.getDoubleBondsCount()
+    ]
+    $a2 : /annotations [
+        this != $a1,
+        $lipid2 : lipid,
+        lipid.getCarbonCount() == $carbonCount,
+        lipid.getDoubleBondsCount() == $doubleBondCount,
+        rtMin > $rt1,
+        eval($lipid2.getLipidTypeRank() > $lipid1.getLipidTypeRank())
+    ]
+then
+    $a1.addScore(1);
+    $a2.addScore(1);
+    System.out.println("Scored 1 for annotations: " + $a1 + " and " + $a2);
+end
+
+rule "Score -1 for lipid pair with decreasing RT and increasing carbon count"
+when
+    $a1 : /annotations [
+        $rt1 : rtMin,
+        $type : lipid.getLipidType(),
+        $carbonCount : lipid.getCarbonCount(),
+        $doubleBondCount : lipid.getDoubleBondsCount()
+    ]
+    $a2 : /annotations [
+        this != $a1,
+        lipid.getLipidType() == $type,
+        lipid.getCarbonCount() > $carbonCount,
+        lipid.getDoubleBondsCount() == $doubleBondCount,
+        rtMin < $rt1
+    ]
+then
+    $a1.addScore(-1);
+    $a2.addScore(-1);
+    System.out.println("Scored -1 for annotations: " + $a1 + " and " + $a2);
+end
+
+rule "Score -1 for lipid pair with decreasing RT and decreasing double bonds"
+when
+    $a1 : /annotations [
+        $rt1 : rtMin,
+        $type : lipid.getLipidType(),
+        $carbonCount : lipid.getCarbonCount(),
+        $doubleBondCount : lipid.getDoubleBondsCount()
+    ]
+    $a2 : /annotations [
+        this != $a1,
+        lipid.getLipidType() == $type,
+        lipid.getCarbonCount() == $carbonCount,
+        lipid.getDoubleBondsCount() < $doubleBondCount,
+        rtMin < $rt1
+    ]
+then
+    $a1.addScore(-1);
+    $a2.addScore(-1);
+    System.out.println("Scored -1 for annotations: " + $a1 + " and " + $a2);
+end
+
+rule "Score -1 for lipid pair with decreasing RT and different lipid type"
+when
+    $a1 : /annotations [
+        $rt1 : rtMin,
+        $lipid1 : lipid,
+        $carbonCount : lipid.getCarbonCount(),
+        $doubleBondCount : lipid.getDoubleBondsCount()
+    ]
+    $a2 : /annotations [
+        this != $a1,
+        $lipid2 : lipid,
+        lipid.getCarbonCount() == $carbonCount,
+        lipid.getDoubleBondsCount() == $doubleBondCount,
+        rtMin < $rt1,
+        eval($lipid2.getLipidTypeRank() > $lipid1.getLipidTypeRank())
+    ]
+then
+    $a1.addScore(-1);
+    $a2.addScore(-1);
+    System.out.println("Scored -1 for annotations: " + $a1 + " and " + $a2);
+end
 
 // !! TODO NEXT RULE: Negative evidence. If the RT follows the opposite order than the previous one, then the addScore should be -1.
